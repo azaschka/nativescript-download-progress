@@ -10,7 +10,6 @@ Nativescripts http.getFile method stores the data in memory which can cause out 
 
 ## Installation
 
-
 ```javascript
 tns plugin add nativescript-download-progress
 ```
@@ -18,56 +17,62 @@ tns plugin add nativescript-download-progress
 ## Examples
 
 ```typescript
-import { DownloadProgress } from "nativescript-download-progress"
+import { DownloadProgress } from "nativescript-download-progress";
 
 const dp = new DownloadProgress();
 dp.setProgressCallback((progress, url, destination) => {
-    console.log('Progress:', progress, 'URL:', url, 'Destination', destination);
-})
-dp.downloadFile("http://ipv4.download.thinkbroadband.com/20MB.zip").then(file => {
+  console.log("Progress:", progress, "URL:", url, "Destination", destination);
+});
+dp.downloadFile("http://ipv4.download.thinkbroadband.com/20MB.zip")
+  .then((file) => {
     console.log("Success", file);
-}).catch(error => {
+  })
+  .catch((error) => {
     console.log("Error", error);
-})
+  });
 ```
 
 ### Passing request headers
 
 ```typescript
-import { DownloadProgress } from "nativescript-download-progress"
+import { DownloadProgress } from "nativescript-download-progress";
 
 const dp = new DownloadProgress();
 dp.setProgressCallback((progress, url, destination) => {
-    console.log('Progress:', progress, 'URL:', url, 'Destination', destination);
-})
+  console.log("Progress:", progress, "URL:", url, "Destination", destination);
+});
 const url = "http://ipv4.download.thinkbroadband.com/20MB.zip";
 const destinationPath = "some/path/to/file.zip";
 const requestOptions: RequestOptions = {
-    method: "GET",
-    headers: {
-       Authorization: "Bearer token",
-    }
+  method: "GET",
+  headers: {
+    Range: "bytes=-",
+  },
 };
-dp.downloadFile(url, requestOptions, destinationPath).then(file => {
+dp.downloadFile(url, requestOptions, destinationPath)
+  .then((file) => {
     console.log("Success", file);
-}).catch(error => {
+  })
+  .catch((error) => {
     console.log("Error", error);
-})
+  });
 ```
 
 ### Async / Await
 
 ```typescript
-import { DownloadProgress } from "nativescript-download-progress"
+import { DownloadProgress } from "nativescript-download-progress";
 
 const dp = new DownloadProgress();
 dp.setProgressCallback((progress, url, destination) => {
-    console.log('Progress:', progress, 'URL:', url, 'Destination', destination);
-})
+  console.log("Progress:", progress, "URL:", url, "Destination", destination);
+});
 try {
-    const f = await downloadFile("http://ipv4.download.thinkbroadband.com/20MB.zip");
-} catch(e) {
-    console.log("Error", error);
+  const f = await downloadFile(
+    "http://ipv4.download.thinkbroadband.com/20MB.zip"
+  );
+} catch (e) {
+  console.log("Error", error);
 }
 ```
 
