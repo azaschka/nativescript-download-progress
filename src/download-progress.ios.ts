@@ -25,13 +25,6 @@ export class DownloadProgress {
     this.progressCallback = callback;
   }
 
-  /**
-   * @deprecated Use setProgressCallback
-   */
-  public addProgressCallback (callback: ProgressCallback) {
-    this.progressCallback = callback;
-  }
-
   public downloadFile (
     url: string,
     options?: any,
@@ -59,9 +52,14 @@ export class DownloadProgress {
           );
         }
 
-        destinationFile.writeTextSync('', e => {
-          throw e;
-        });
+        // TODO: Check if Range header is present
+        // Only write an empty string, if the file size is 0 as it would interfere with Range header
+        if (destinationFile.size === 0) {
+          destinationFile.writeTextSync('', e => {
+            throw e;
+          });
+        }
+
         const urlRequest = NSMutableURLRequest.requestWithURL(
           NSURL.URLWithString(url)
         );
@@ -107,13 +105,15 @@ export class DownloadProgress {
             );
             fileHandle.seekToEndOfFile();
             fileHandle.writeData(data);
-            const progress =
-              ((100.0 / this.urlResponse.expectedContentLength) *
-                fileHandle.seekToEndOfFile()) /
-              100;
-            if (progressCallback) {
-              progressCallback(progress, url, destinationFilePath);
-            }
+
+            // TODO: Fix issues regarding .expectedContentLength as it leads to an app crash as of iOS 14
+            // const progress =
+            //   ((100.0 / this.urlResponse.expectedContentLength) *
+            //     fileHandle.seekToEndOfFile()) /
+            //   100;
+            // if (progressCallback) {
+            //   progressCallback(progress, url, destinationFilePath);
+            // }
             fileHandle.closeFile();
           }
 
