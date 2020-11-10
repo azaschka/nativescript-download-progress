@@ -4,143 +4,132 @@ import { getFilenameFromUrl } from '@nativescript/core/http/http-request/http-re
 type ProgressCallback = (progress: number, url: string, destination: string) => void;
 
 const currentDevice = UIDevice.currentDevice;
-const device =
-  currentDevice.userInterfaceIdiom === UIUserInterfaceIdiom.Phone
-    ? 'Phone'
-    : 'Pad';
+const device = currentDevice.userInterfaceIdiom === UIUserInterfaceIdiom.Phone ? 'Phone' : 'Pad';
 const osVersion = currentDevice.systemVersion;
 
 const USER_AGENT_HEADER = 'User-Agent';
 const USER_AGENT = `Mozilla/5.0 (i${device}; CPU OS ${osVersion.replace(
-  '.',
-  '_'
+    '.',
+    '_'
 )} like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/${osVersion} Mobile/10A5355d Safari/8536.25`;
 const sessionConfig = NSURLSessionConfiguration.defaultSessionConfiguration;
 const queue = NSOperationQueue.mainQueue;
 
 export class DownloadProgress {
-  private progressCallback: ProgressCallback;
+    private progressCallback: ProgressCallback;
 
-  public setProgressCallback (callback: ProgressCallback) {
-    this.progressCallback = callback;
-  }
+    public setProgressCallback(callback: ProgressCallback) {
+        this.progressCallback = callback;
+    }
 
-  public downloadFile (
-    url: string,
-    options?: any,
-    destinationFilePath?: string
-  ): Promise<File> {
-    return new Promise<File>((resolve, reject) => {
-      const progressCallback = this.progressCallback;
-      let destinationFile: File;
-      // we check if options is a string
-      // since in older versions of this plugin,
-      // destinationFilePath was the second parameter.
-      // so we check if options is possibly destinationFilePath {String}
-      let isOptionsObject = true;
-      if (typeof options === 'string') {
-        isOptionsObject = false;
-        destinationFilePath = options;
-      }
-
-      try {
-        if (destinationFilePath) {
-          destinationFile = File.fromPath(destinationFilePath);
-        } else {
-          destinationFile = File.fromPath(
-            getFilenameFromUrl(url)
-          );
-        }
-
-        // TODO: Check if Range header is present
-        // Only write an empty string, if the file size is 0 as it would interfere with Range header
-        if (destinationFile.size === 0) {
-          destinationFile.writeTextSync('', e => {
-            throw e;
-          });
-        }
-
-        const urlRequest = NSMutableURLRequest.requestWithURL(
-          NSURL.URLWithString(url)
-        );
-        urlRequest.setValueForHTTPHeaderField(USER_AGENT, USER_AGENT_HEADER);
-        if (options && isOptionsObject) {
-          const { method, headers } = options;
-          if (method) {
-            urlRequest.HTTPMethod = method;
-          }
-          if (headers) {
-            for (const key in headers) {
-              urlRequest.setValueForHTTPHeaderField(headers[key], key);
+    public downloadFile(
+        url: string,
+        options?: any,
+        destinationFilePath?: string,
+        expectedFileSize?: number
+    ): Promise<File> {
+        return new Promise<File>((resolve, reject) => {
+            const progressCallback = this.progressCallback;
+            let destinationFile: File;
+            // we check if options is a string
+            // since in older versions of this plugin,
+            // destinationFilePath was the second parameter.
+            // so we check if options is possibly destinationFilePath {String}
+            let isOptionsObject = true;
+            if (typeof options === 'string') {
+                isOptionsObject = false;
+                destinationFilePath = options;
             }
-          }
-        } else {
-          urlRequest.HTTPMethod = 'GET';
-        }
 
-        @NativeClass()
-        class DownloadProgressDelegate
-          extends NSObject
-          implements NSURLSessionDataDelegate {
-          static ObjCProtocols = [NSURLSessionDataDelegate];
-          private urlResponse: NSURLResponse;
+            try {
+                if (destinationFilePath) {
+                    destinationFile = File.fromPath(destinationFilePath);
+                } else {
+                    destinationFile = File.fromPath(getFilenameFromUrl(url));
+                }
 
-          public URLSessionDataTaskDidReceiveResponseCompletionHandler (
-            session: NSURLSession,
-            dataTask: NSURLSessionDataTask,
-            response: NSURLResponse,
-            completionHandler: (p1: NSURLSessionResponseDisposition) => void
-          ) {
-            completionHandler(NSURLSessionResponseDisposition.Allow);
-            this.urlResponse = response;
-          }
+                // TODO: Check if Range header is present
+                // Only write an empty string, if the file size is 0 as it would interfere with Range header
+                if (destinationFile.size === 0) {
+                    destinationFile.writeTextSync('', (e) => {
+                        throw e;
+                    });
+                }
 
-          public URLSessionDataTaskDidReceiveData (
-            session: NSURLSession,
-            dataTask: NSURLSessionDataTask,
-            data: NSData
-          ) {
-            const fileHandle = NSFileHandle.fileHandleForWritingAtPath(
-              destinationFile.path
-            );
-            fileHandle.seekToEndOfFile();
-            fileHandle.writeData(data);
+                const urlRequest = NSMutableURLRequest.requestWithURL(NSURL.URLWithString(url));
+                urlRequest.setValueForHTTPHeaderField(USER_AGENT, USER_AGENT_HEADER);
+                if (options && isOptionsObject) {
+                    const { method, headers } = options;
+                    if (method) {
+                        urlRequest.HTTPMethod = method;
+                    }
+                    if (headers) {
+                        for (const key in headers) {
+                            urlRequest.setValueForHTTPHeaderField(headers[key], key);
+                        }
+                    }
+                } else {
+                    urlRequest.HTTPMethod = 'GET';
+                }
 
-            // TODO: Fix issues regarding .expectedContentLength as it leads to an app crash as of iOS 14
-            // const progress =
-            //   ((100.0 / this.urlResponse.expectedContentLength) *
-            //     fileHandle.seekToEndOfFile()) /
-            //   100;
-            // if (progressCallback) {
-            //   progressCallback(progress, url, destinationFilePath);
-            // }
-            fileHandle.closeFile();
-          }
+                @NativeClass()
+                class DownloadProgressDelegate extends NSObject implements NSURLSessionDataDelegate {
+                    static ObjCProtocols = [NSURLSessionDataDelegate];
+                    private urlResponse: NSURLResponse;
 
-          public URLSessionTaskDidCompleteWithError (
-            session: NSURLSession,
-            task: NSURLSessionTask,
-            error: NSError
-          ) {
-            if (error) {
-              reject(error);
-            } else {
-              resolve(destinationFile);
+                    public URLSessionDataTaskDidReceiveResponseCompletionHandler(
+                        session: NSURLSession,
+                        dataTask: NSURLSessionDataTask,
+                        response: NSURLResponse,
+                        completionHandler: (p1: NSURLSessionResponseDisposition) => void
+                    ) {
+                        completionHandler(NSURLSessionResponseDisposition.Allow);
+                        this.urlResponse = response;
+                    }
+
+                    public URLSessionDataTaskDidReceiveData(
+                        session: NSURLSession,
+                        dataTask: NSURLSessionDataTask,
+                        data: NSData
+                    ) {
+                        const fileHandle = NSFileHandle.fileHandleForWritingAtPath(destinationFile.path);
+                        fileHandle.seekToEndOfFile();
+                        fileHandle.writeData(data);
+
+                        if (expectedFileSize) {
+                            const progress = ((100.0 / expectedFileSize) * fileHandle.seekToEndOfFile()) / 100;
+                            if (progressCallback) {
+                                progressCallback(progress, url, destinationFilePath);
+                            }
+                        }
+
+                        fileHandle.closeFile();
+                    }
+
+                    public URLSessionTaskDidCompleteWithError(
+                        session: NSURLSession,
+                        task: NSURLSessionTask,
+                        error: NSError
+                    ) {
+                        if (error) {
+                            reject(error);
+                        } else {
+                            resolve(destinationFile);
+                        }
+                    }
+                }
+
+                const session = NSURLSession.sessionWithConfigurationDelegateDelegateQueue(
+                    sessionConfig,
+                    <DownloadProgressDelegate>DownloadProgressDelegate.new(),
+                    queue
+                );
+                const dataTask = session.dataTaskWithRequest(urlRequest);
+
+                dataTask.resume();
+            } catch (ex) {
+                reject(ex);
             }
-          }
-        }
-
-        const session = NSURLSession.sessionWithConfigurationDelegateDelegateQueue(
-          sessionConfig,
-          <DownloadProgressDelegate>DownloadProgressDelegate.new(),
-          queue
-        );
-        const dataTask = session.dataTaskWithRequest(urlRequest);
-
-        dataTask.resume();
-      } catch (ex) {
-        reject(ex);
-      }
-    });
-  }
+        });
+    }
 }

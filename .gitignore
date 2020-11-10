@@ -13,3 +13,6 @@ src/*.d.ts
 node_modules
 publish/src
 publish/package
+.editorconfig
+.prettierignore
+.prettierrc
