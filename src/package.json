@@ -1,6 +1,6 @@
 {
     "name": "@azaschka/nativescript-file-downloader",
-    "version": "1.5.3",
+    "version": "1.5.4",
     "description": "Download large files with progress events and resumable downloads",
     "main": "download-progress",
     "typings": "index.d.ts",
