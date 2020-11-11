@@ -3,7 +3,7 @@
 .DS_Store
 *.esm.json
 *.js
-!src/android-worker.js
+#!src/android-worker.js
 *.js.map
 *.log
 src/*.d.ts

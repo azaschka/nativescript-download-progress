@@ -2,6 +2,48 @@ import { File } from '@nativescript/core';
 
 type ProgressCallback = (progress: number, url: string, destination: string) => void;
 
+type HeaderInformation = {
+    contentLength: string;
+    contentMD5: string;
+};
+
+export class FileInfo {
+    private promiseResolve: (value?: HeaderInformation | PromiseLike<HeaderInformation>) => void;
+    private promiseReject: (reason: any) => void;
+    private worker: Worker;
+
+    public constructor() {
+        if (global.TNS_WEBPACK) {
+            // eslint-disable-next-line
+            const WorkerScript = require('nativescript-worker-loader!./android-fileinfo-worker.js');
+            this.worker = new WorkerScript();
+        } else {
+            this.worker = new Worker('./android-fileinfo-worker.js');
+        }
+    }
+
+    public getHeaderInformation(url: string): Promise<HeaderInformation> {
+        return new Promise<HeaderInformation>((resolve, reject) => {
+            this.promiseResolve = resolve;
+            this.promiseReject = reject;
+
+            this.worker.postMessage({ url });
+            this.worker.onmessage = (msg: any) => {
+                if (msg.data.headerInformation) {
+                    this.promiseResolve(msg.data.headerInformation as HeaderInformation);
+                } else {
+                    this.promiseReject(msg.data.error);
+                }
+            };
+
+            this.worker.onerror = (err) => {
+                console.log(`An unhandled error occurred in worker: ${err.filename}, line: ${err.lineno} :`);
+                this.promiseReject(err.message);
+            };
+        });
+    }
+}
+
 export class DownloadProgress {
     private promiseResolve: (value?: File | PromiseLike<File>) => void;
     private promiseReject: (reason: any) => void;
@@ -11,21 +53,14 @@ export class DownloadProgress {
     public constructor() {
         if (global.TNS_WEBPACK) {
             // eslint-disable-next-line
-            const WorkerScript = require('nativescript-worker-loader!./android-worker.js');
+            const WorkerScript = require('nativescript-worker-loader!./android-progress-worker.js');
             this.worker = new WorkerScript();
         } else {
-            this.worker = new Worker('./android-worker.js');
+            this.worker = new Worker('./android-progress-worker.js');
         }
     }
 
     public setProgressCallback(callback: ProgressCallback) {
-        this.progressCallback = callback;
-    }
-
-    /**
-     * @deprecated Use setProgressCallback
-     */
-    public addProgressCallback(callback: ProgressCallback) {
         this.progressCallback = callback;
     }
 
