@@ -3,7 +3,7 @@ import { File } from '@nativescript/core';
 type ProgressCallback = (progress: number, url: string, destination: string) => void;
 
 type HeaderInformation = {
-    contentLength: string;
+    contentLength: number;
     contentMD5: string;
 };
 

@@ -8,7 +8,7 @@ export declare type RequestOptions = {
 export declare type ProgressCallback = (progress: number, url: string, destination: string) => void;
 
 export declare type HeaderInformation = {
-    contentLength: string;
+    contentLength: number;
     contentMD5: string;
 };
 
