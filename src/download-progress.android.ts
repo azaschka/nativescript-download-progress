@@ -91,6 +91,9 @@ export class DownloadProgress {
                 expectedFileSize: expectedFileSize,
             });
             this.worker.onmessage = (msg: any) => {
+                if (!msg || !msg.data) {
+                    this.promiseReject('Communication with worker failed.');
+                }
                 if (msg.data.progress) {
                     if (this.progressCallback) {
                         this.progressCallback(msg.data.progress, url, destinationFilePath);

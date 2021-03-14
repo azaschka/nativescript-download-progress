@@ -157,18 +157,24 @@ export class DownloadProgress {
                         dataTask: NSURLSessionDataTask,
                         data: NSData
                     ) {
-                        const fileHandle = NSFileHandle.fileHandleForWritingAtPath(destinationFile.path);
-                        fileHandle.seekToEndOfFile();
-                        fileHandle.writeData(data);
+                        try {
+                            const fileHandle = NSFileHandle.fileHandleForWritingAtPath(destinationFile.path);
+                            fileHandle.seekToEndOfFile();
+                            fileHandle.writeData(data);
 
-                        if (expectedFileSize) {
-                            const progress = ((100.0 / expectedFileSize) * fileHandle.seekToEndOfFile()) / 100;
+                            if (expectedFileSize) {
+                                const progress = ((100.0 / expectedFileSize) * fileHandle.seekToEndOfFile()) / 100;
+                                if (progressCallback) {
+                                    progressCallback(progress, url, destinationFilePath);
+                                }
+                            }
+
+                            fileHandle.closeFile();
+                        } catch (error) {
                             if (progressCallback) {
-                                progressCallback(progress, url, destinationFilePath);
+                                progressCallback(-1, url, destinationFilePath);
                             }
                         }
-
-                        fileHandle.closeFile();
                     }
 
                     public URLSessionTaskDidCompleteWithError(
